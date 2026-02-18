@@ -3,3 +3,9 @@
 credentials.json
 token_google.pickle
 *.pickle
+token_spotify*
+
+# runtime artifacts
+data/
+__pycache__/
+*.pyc

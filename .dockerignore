@@ -1,0 +1,12 @@
+.git
+.gitignore
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+credentials.json
+*.pickle
+token_*
+data/
+.DS_Store

@@ -1,0 +1,15 @@
+services:
+  syncplaylist:
+    build: .
+    env_file:
+      - .env
+    environment:
+      YOUTUBE_AUTH_MODE: ${YOUTUBE_AUTH_MODE:-console}
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./data:/app/data
+      - ./credentials.json:/app/credentials.json:ro
+      - ./blacklist_songs.json:/app/blacklist_songs.json
+    tty: true
+    stdin_open: true
