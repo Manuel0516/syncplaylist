@@ -25,6 +25,26 @@ class YouTubeClient:
     def _authenticate(self):
         creds: Credentials | None = None
 
+        def run_local_auth_server(*, open_browser: bool):
+            kwargs = {
+                "host": "localhost",
+                "port": self.settings.youtube_auth_port,
+                "open_browser": open_browser,
+            }
+            bind_addr = self.settings.youtube_auth_bind_addr.strip()
+            if bind_addr:
+                kwargs["bind_addr"] = bind_addr
+            self.logger.info(
+                "Starting YouTube OAuth callback server at http://localhost:%s/ (bind_addr=%s)",
+                self.settings.youtube_auth_port,
+                bind_addr or "default",
+            )
+            try:
+                return flow.run_local_server(**kwargs)
+            except TypeError:
+                kwargs.pop("bind_addr", None)
+                return flow.run_local_server(**kwargs)
+
         if self.settings.youtube_token_file.exists():
             with self.settings.youtube_token_file.open("rb") as token_file:
                 creds = pickle.load(token_file)
@@ -46,13 +66,14 @@ class YouTubeClient:
                 if auth_mode not in {"auto", "console", "local"}:
                     raise ValueError("YOUTUBE_AUTH_MODE must be one of: auto, console, local")
 
-                if auth_mode == "console" or (auth_mode == "auto" and not os.getenv("DISPLAY")):
-                    if hasattr(flow, "run_console"):
-                        creds = flow.run_console()
-                    else:
-                        creds = flow.run_local_server(port=0, open_browser=False)
+                has_display = bool(os.getenv("DISPLAY"))
+                if auth_mode == "local":
+                    open_browser = has_display
+                elif auth_mode == "console":
+                    open_browser = False
                 else:
-                    creds = flow.run_local_server(port=0, open_browser=False)
+                    open_browser = has_display
+                creds = run_local_auth_server(open_browser=open_browser)
 
             self.settings.youtube_token_file.parent.mkdir(parents=True, exist_ok=True)
             with self.settings.youtube_token_file.open("wb") as token_file:

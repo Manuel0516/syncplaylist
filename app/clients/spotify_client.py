@@ -27,6 +27,19 @@ class SpotifyClient:
             cache_path=str(self.settings.spotify_token_file),
             open_browser=False,
         )
+
+        token_info = auth_manager.validate_token(auth_manager.cache_handler.get_cached_token())
+        if token_info is None:
+            self.logger.info(
+                "Spotify OAuth requires manual callback confirmation at %s",
+                self.settings.spotify_redirect_uri,
+            )
+            self.logger.info(
+                "After approving in the browser, if the callback page says it cannot be reached, "
+                "copy the full redirected URL and paste it into this terminal prompt.",
+            )
+            auth_manager.get_access_token(as_dict=False, check_cache=False)
+
         return spotipy.Spotify(auth_manager=auth_manager)
 
     def list_playlist_songs(self, playlist_id: str) -> list[Song]:

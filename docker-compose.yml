@@ -5,6 +5,7 @@ services:
       - .env
     environment:
       YOUTUBE_AUTH_MODE: ${YOUTUBE_AUTH_MODE:-console}
+      YOUTUBE_AUTH_BIND_ADDR: ${YOUTUBE_AUTH_BIND_ADDR:-0.0.0.0}
     ports:
       - "8888:8888"
     volumes:

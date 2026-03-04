@@ -47,6 +47,12 @@ def _env_float(name: str, default: float) -> float:
         raise ValueError(f"Environment variable {name} must be a float.") from exc
 
 
+def _normalize_spotify_redirect_uri(uri: str) -> str:
+    if uri.startswith("http://localhost"):
+        return "http://127.0.0.1" + uri[len("http://localhost") :]
+    return uri
+
+
 @dataclass(frozen=True)
 class Settings:
     spotify_client_id: str
@@ -65,6 +71,8 @@ class Settings:
     match_threshold: float
     strict_threshold: float
     youtube_auth_mode: str
+    youtube_auth_port: int
+    youtube_auth_bind_addr: str
 
 
 SPOTIFY_SCOPE = "playlist-read-private playlist-read-collaborative playlist-modify-private playlist-modify-public"
@@ -105,10 +113,14 @@ def load_settings() -> Settings:
     ) or str(default_blacklist if default_blacklist.exists() else state_dir / "blacklist_songs.json")
     blacklist_file = Path(blacklist_value)
 
+    spotify_redirect_uri = _normalize_spotify_redirect_uri(
+        _env("SPOTIFY_REDIRECT_URI", "http://127.0.0.1:8888/callback") or "http://127.0.0.1:8888/callback"
+    )
+
     return Settings(
         spotify_client_id=_env("SPOTIFY_CLIENT_ID") or "",
         spotify_client_secret=_env("SPOTIFY_CLIENT_SECRET") or "",
-        spotify_redirect_uri=_env("SPOTIFY_REDIRECT_URI", "http://localhost:8888/callback") or "http://localhost:8888/callback",
+        spotify_redirect_uri=spotify_redirect_uri,
         spotify_playlist_id=_env("SPOTIFY_PLAYLIST_ID") or "",
         youtube_playlist_id=_env("YOUTUBE_PLAYLIST_ID") or "",
         google_credentials_file=credentials_file,
@@ -122,4 +134,6 @@ def load_settings() -> Settings:
         match_threshold=max(0.5, min(1.0, _env_float("MATCH_THRESHOLD", 0.80))),
         strict_threshold=max(0.5, min(1.0, _env_float("STRICT_MATCH_THRESHOLD", 0.92))),
         youtube_auth_mode=(_env("YOUTUBE_AUTH_MODE", "auto") or "auto").lower(),
+        youtube_auth_port=max(0, min(65535, _env_int("YOUTUBE_AUTH_PORT", 8888))),
+        youtube_auth_bind_addr=_env("YOUTUBE_AUTH_BIND_ADDR", "127.0.0.1") or "127.0.0.1",
     )
